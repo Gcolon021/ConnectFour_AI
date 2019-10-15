@@ -164,7 +164,6 @@ public class ConnectFourModel implements ConnectFourModelInterface{
 		observers.add(o);
 	}
 
-	
 	public void registerObserver(ResultObserver o){
 		resultObs.add(o);
 	}
@@ -188,10 +187,7 @@ public class ConnectFourModel implements ConnectFourModelInterface{
 		for(int i=0; i<7; i++){
 			avail[i] = (grid[i][0] == EMPTY);
 		}
-		
 		return avail;
 	}
-
-
 
 }

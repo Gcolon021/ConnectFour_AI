@@ -17,18 +17,19 @@ public class ConnectFour {
 		
 		// Change the constructor calls to change the players used
 		ConnectFourPlayer player1 = new ConnectFourHumanPlayer(m);
-		ConnectFourPlayer player2 = new ConnectFourRandomPlayer(m);
-		
+//		ConnectFourPlayer player2 = new ConnectFourRandomPlayer(m);
+		ConnectFourPlayer player2 = new ConnectFourAIPlayer(m);
+
 		// Choose 1 of the Controller/View set-ups below.
 		
 		// Sets up "silent" view -- No output at all
 		//ConnectFourController c = new ConnectFourController(m, player1, player2, false);
 
 		// Sets up console view -- All output to console
-		//ConnectFourController c = new ConnectFourController(m, player1, player2, true);
+		ConnectFourController c = new ConnectFourController(m, player1, player2, true);
 		
 		// Sets up GUI view -- All output thru Swing GUI
-		ConnectFourController c = new ConnectFourController(m, player1, player2);
+		//ConnectFourController c = new ConnectFourController(m, player1, player2);
 		
 		// Start the game
 		c.start();
@@ -44,8 +45,8 @@ public class ConnectFour {
 			
 				// Change the constructor calls to change the players used. Do not use HumanPlayer with this set-up.
 				ConnectFourPlayer player1 = new ConnectFourRandomPlayer(m);
-				ConnectFourPlayer player2 = new ConnectFourRandomPlayer(m);
-				
+//				ConnectFourPlayer player2 = new ConnectFourRandomPlayer(m);
+				ConnectFourAIPlayer player2 = new ConnectFourAIPlayer(m);
 				ConnectFourController c = new ConnectFourController(m, player1, player2, false);
 				//System.out.println("Starting game "+i); //Useful for debugging.
 				int winner = c.start();
