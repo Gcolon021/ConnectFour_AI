@@ -44,9 +44,12 @@ public class ConnectFour {
 				ConnectFourModel m = new ConnectFourModel();
 			
 				// Change the constructor calls to change the players used. Do not use HumanPlayer with this set-up.
-				ConnectFourPlayer player1 = new ConnectFourRandomPlayer(m);
+//				ConnectFourPlayer player1 = new ConnectFourRandomPlayer(m);
 //				ConnectFourPlayer player2 = new ConnectFourRandomPlayer(m);
+
+                ConnectFourAIPlayer player1 = new ConnectFourAIPlayer(m);
 				ConnectFourAIPlayer player2 = new ConnectFourAIPlayer(m);
+
 				ConnectFourController c = new ConnectFourController(m, player1, player2, false);
 				//System.out.println("Starting game "+i); //Useful for debugging.
 				int winner = c.start();
@@ -56,6 +59,7 @@ public class ConnectFour {
 				int player = e.getPlayer();
 				forfeits[player] += 1;
 				results[3-player] += 1; // Award win to other player
+                System.out.println(e);
 			}
 		}
 		System.out.print("Player 1 record (W-L-D): "+results[1]+"-"+results[2]+"-"+results[0]);
