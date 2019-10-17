@@ -3,6 +3,8 @@ package c4.players;
 import c4.mvc.ConnectFourModel;
 import c4.mvc.ConnectFourModelInterface;
 
+import java.util.Arrays;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -19,7 +21,21 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     @Override
     public int getMove() {
-        return alphaBetaPruning(Integer.MIN_VALUE, Integer.MIN_VALUE, model.getGrid(), depth, true);
+        int[][] state = model.getGrid();
+        int[] actions = actions(state);
+        int col = -1;
+        int max = 0;
+        for (int i = 0; i < actions.length; i++) {
+            int x = actions[i];
+            if (x != 0) {
+                int i1 = alphaBetaPruning(Integer.MIN_VALUE, Integer.MAX_VALUE, result(state, i), depth, true);
+                if (max < i1){
+                    max = i1;
+                    col = i;
+                }
+            }
+        }
+        return col;
     }
 
     private int alphaBetaPruning(int alpha, int beta, int[][] state, int depth, Boolean maximizingPlayer) {
@@ -34,7 +50,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
                     alpha = max(alpha, eval);
                     if (alpha >= beta) break;
                 }
-                return max(maxEval, eval);
+                return eval;
             }
         } else {
             int minEval = Integer.MAX_VALUE;
@@ -44,7 +60,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
                     beta = min(beta, eval);
                     if (alpha >= beta) break;
                 }
-                return max(minEval, eval);
+                return eval;
             }
         }
         return 0;
