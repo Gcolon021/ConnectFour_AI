@@ -3,6 +3,8 @@ package c4.players;
 import c4.mvc.ConnectFourModel;
 import c4.mvc.ConnectFourModelInterface;
 
+import java.util.ArrayList;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -11,7 +13,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     private final int EMPTY = -1;
     private ConnectFourModel model;
     private int playerTurn = 1;
-    private int depth = 42;
+    private int depth = 100;
 
     public ConnectFourAIPlayer(ConnectFourModelInterface model) {
         this.model = (ConnectFourModel) model;
@@ -19,50 +21,46 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     @Override
     public int getMove() {
-        return alphaBetaPruning(model.getGrid());
+        return alphaBetaSearch(model.getGrid());
     }
 
-    private int alphaBetaPruning(int[][] state) {
+    private int alphaBetaSearch(int[][] state) {
         int[] actions = actions(state);
         int col = -1;
         int max = 0;
         for (int i = 0; i < actions.length; i++) {
             int x = actions[i];
-            if (x != 0) {
-                int i1 = maxValue(result(state, i), Integer.MIN_VALUE, Integer.MAX_VALUE, this.depth);
-                if (max < i1) {
-                    max = i1;
-                    col = i;
-                }
+            int i1 = maxValue(result(state, x), Integer.MIN_VALUE, Integer.MAX_VALUE, this.depth);
+            if (max < i1) {
+                max = i1;
+                col = x;
             }
         }
         return col;
     }
 
     public int maxValue(int[][] state, int alpha, int beta, int depth) {
-        if (checkForWinner(state) || depth == this.depth) return utility(state);
+        if (terminalTest(state, depth)) return utility(state);
         int[] actions = actions(state);
         int eval = Integer.MIN_VALUE;
         for (int i = 0; i < actions.length; i++) {
-            if (actions[i] != 0) {
-                eval = max(eval, minValue(result(state, i), alpha, beta, depth+1));
-                if (eval >= beta) return eval;
-                alpha = max(alpha, eval);
-            }
+            int action = actions[i];
+            eval = max(eval, minValue(result(state, action), alpha, beta, depth + 1));
+            if (eval >= beta) return eval;
+            alpha = max(alpha, eval);
         }
         return eval;
     }
 
     private int minValue(int[][] state, int alpha, int beta, int depth) {
-        if (checkForWinner(state) || depth == this.depth) return utility(state);
+        if (terminalTest(state, depth)) return utility(state);
         int[] actions = actions(state);
         int eval = Integer.MAX_VALUE;
         for (int i = 0; i < actions.length; i++) {
-            if (actions[i] != 0) {
-                eval = max(eval, maxValue(result(state, i), alpha, beta, depth + 1));
-                if (eval >= alpha) return eval;
-                beta = min(beta, eval);
-            }
+            int action = actions[i];
+            eval = max(eval, maxValue(result(state, action), alpha, beta, depth + 1));
+            if (eval <= alpha) return eval;
+            beta = min(beta, eval);
         }
         return eval;
     }
@@ -112,18 +110,22 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     private int[] actions(int[][] board) {
-        int[] actions = new int[7];
-        for (int i = 0; i < board.length; i++) if (board[i][0] == EMPTY) actions[i] = 1;
-        return actions;
+        ArrayList<Integer> actions = new ArrayList<>();
+        for (int i = 0; i < board.length; i++) if (board[i][0] == EMPTY) actions.add(i);
+        int[] actionsPrim = new int[actions.size()];
+        for (int i = 0; i < actions.size(); i++) {
+            actionsPrim[i] = actions.get(i);
+        }
+        return actionsPrim;
     }
 
-    private boolean terminalTest() {
-        return model.checkForWinner() > 0 || model.checkForDraw();
+    private boolean terminalTest(int[][] state, int depth) {
+        return checkForWinner(state) || checkForDraw(state) || depth == this.depth;
     }
 
     private int[][] result(int[][] gameState, int action) {
         int[][] grid = gameState.clone();
-        for (int row = grid[0].length - 1; row > 0; row--) {
+        for (int row = 1; row <= grid[0].length - 1; row++) {
             if (grid[action][row] == -1) {
                 grid[action][row] = determinePlayer(gameState);
             }
