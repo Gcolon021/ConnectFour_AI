@@ -3,8 +3,6 @@ package c4.players;
 import c4.mvc.ConnectFourModel;
 import c4.mvc.ConnectFourModelInterface;
 
-import java.util.Arrays;
-
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -21,15 +19,18 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     @Override
     public int getMove() {
-        int[][] state = model.getGrid();
+        return alphaBetaPruning(model.getGrid());
+    }
+
+    private int alphaBetaPruning(int[][] state) {
         int[] actions = actions(state);
         int col = -1;
         int max = 0;
         for (int i = 0; i < actions.length; i++) {
             int x = actions[i];
             if (x != 0) {
-                int i1 = alphaBetaPruning(Integer.MIN_VALUE, Integer.MAX_VALUE, result(state, i), depth, true);
-                if (max < i1){
+                int i1 = maxValue(result(state, i), Integer.MIN_VALUE, Integer.MAX_VALUE, this.depth);
+                if (max < i1) {
                     max = i1;
                     col = i;
                 }
@@ -38,32 +39,32 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
         return col;
     }
 
-    private int alphaBetaPruning(int alpha, int beta, int[][] state, int depth, Boolean maximizingPlayer) {
-        if (checkForWinner(state) || depth == -1) return utility(state);
+    public int maxValue(int[][] state, int alpha, int beta, int depth) {
+        if (checkForWinner(state) || depth == this.depth) return utility(state);
         int[] actions = actions(state);
-        int eval = -1;
-        if (maximizingPlayer) {
-            int maxEval = Integer.MIN_VALUE;
-            for (int i = 0; i < actions.length; i++) {
-                if (actions[i] != 0) {
-                    eval = alphaBetaPruning(alpha, beta, result(state, i), depth - 1, false);
-                    alpha = max(alpha, eval);
-                    if (alpha >= beta) break;
-                }
-                return eval;
-            }
-        } else {
-            int minEval = Integer.MAX_VALUE;
-            for (int i = 0; i < actions.length; i++) {
-                if (actions[i] != 0) {
-                    eval = alphaBetaPruning(alpha, beta, result(state, i), depth - 1, true);
-                    beta = min(beta, eval);
-                    if (alpha >= beta) break;
-                }
-                return eval;
+        int eval = Integer.MIN_VALUE;
+        for (int i = 0; i < actions.length; i++) {
+            if (actions[i] != 0) {
+                eval = max(eval, minValue(result(state, i), alpha, beta, depth+1));
+                if (eval >= beta) return eval;
+                alpha = max(alpha, eval);
             }
         }
-        return 0;
+        return eval;
+    }
+
+    private int minValue(int[][] state, int alpha, int beta, int depth) {
+        if (checkForWinner(state) || depth == this.depth) return utility(state);
+        int[] actions = actions(state);
+        int eval = Integer.MAX_VALUE;
+        for (int i = 0; i < actions.length; i++) {
+            if (actions[i] != 0) {
+                eval = max(eval, maxValue(result(state, i), alpha, beta, depth + 1));
+                if (eval >= alpha) return eval;
+                beta = min(beta, eval);
+            }
+        }
+        return eval;
     }
 
     public int dumbGetMove() {
