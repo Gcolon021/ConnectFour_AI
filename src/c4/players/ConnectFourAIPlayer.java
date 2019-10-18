@@ -125,7 +125,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     private int[][] result(int[][] gameState, int action) {
         int[][] grid = gameState.clone();
-        for (int row = 1; row <= grid[0].length - 1; row++) {
+        for (int row = 1; row < grid[0].length - 1; row++) {
             if (grid[action][row] == -1) {
                 grid[action][row] = determinePlayer(gameState);
             }
