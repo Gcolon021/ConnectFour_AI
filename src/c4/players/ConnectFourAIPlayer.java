@@ -1,37 +1,47 @@
 package c4.players;
 
-import c4.mvc.ConnectFourModel;
 import c4.mvc.ConnectFourModelInterface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 
 public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     private final int EMPTY = -1;
-    private ConnectFourModel model;
-    private int playerTurn = 1;
-    private int depth = 100;
+    private ConnectFourModelInterface model;
+    private int currentPlayerPosition;
+    private int maxDepth;
 
     public ConnectFourAIPlayer(ConnectFourModelInterface model) {
-        this.model = (ConnectFourModel) model;
+        this.model = model;
+        this.maxDepth = 100;
+    }
+
+    public ConnectFourAIPlayer(ConnectFourModelInterface model, int depth) {
+        this.model = model;
+        this.maxDepth = depth;
     }
 
     @Override
     public int getMove() {
-        return alphaBetaSearch(model.getGrid());
+        if (currentPlayerPosition == 0) {
+            currentPlayerPosition = model.getTurn();
+        }
+        int[][] grid = model.getGrid();
+        return alphaBetaSearch(grid);
     }
 
     private int alphaBetaSearch(int[][] state) {
+        int col = 3;
         int[] actions = actions(state);
-        int col = -1;
-        int max = 0;
+        int max = Integer.MIN_VALUE;
         for (int i = 0; i < actions.length; i++) {
             int x = actions[i];
-            int i1 = maxValue(result(state, x), Integer.MIN_VALUE, Integer.MAX_VALUE, this.depth);
-            if (max < i1) {
+            int i1 = minValue(result(state, x), Integer.MIN_VALUE, Integer.MAX_VALUE, 0);
+            if (i1 > max) {
                 max = i1;
                 col = x;
             }
@@ -39,29 +49,29 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
         return col;
     }
 
-    public int maxValue(int[][] state, int alpha, int beta, int depth) {
-        if (terminalTest(state, depth)) return utility(state);
+    public int maxValue(int[][] state, int alpha, int beta, int currentDepth) {
+        if (terminalTest(state, currentDepth)) return utility(state);
         int[] actions = actions(state);
         int eval = Integer.MIN_VALUE;
         for (int i = 0; i < actions.length; i++) {
             int action = actions[i];
-            eval = max(eval, minValue(result(state, action), alpha, beta, depth + 1));
+            eval = max(eval, minValue(result(state, action), alpha, beta, currentDepth + 1));
             if (eval >= beta) return eval;
             alpha = max(alpha, eval);
-        }
+            }
         return eval;
     }
 
-    private int minValue(int[][] state, int alpha, int beta, int depth) {
-        if (terminalTest(state, depth)) return utility(state);
+    private int minValue(int[][] state, int alpha, int beta, int currentDepth) {
+        if (terminalTest(state, currentDepth)) return utility(state);
         int[] actions = actions(state);
         int eval = Integer.MAX_VALUE;
         for (int i = 0; i < actions.length; i++) {
             int action = actions[i];
-            eval = max(eval, maxValue(result(state, action), alpha, beta, depth + 1));
-            if (eval <= alpha) return eval;
+            eval = min(eval, maxValue(result(state, action), alpha, beta, currentDepth + 1));
+            if (eval >= beta) return eval;
             beta = min(beta, eval);
-        }
+            }
         return eval;
     }
 
@@ -112,20 +122,31 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     private int[] actions(int[][] board) {
         ArrayList<Integer> actions = new ArrayList<>();
         for (int i = 0; i < board.length; i++) if (board[i][0] == EMPTY) actions.add(i);
-        int[] actionsPrim = new int[actions.size()];
-        for (int i = 0; i < actions.size(); i++) {
-            actionsPrim[i] = actions.get(i);
+        int[] possibleActions = new int[actions.size()];
+        for (int i = 0; i < possibleActions.length; i++) {
+            possibleActions[i] = actions.get(i);
         }
-        return actionsPrim;
+        return possibleActions;
     }
 
     private boolean terminalTest(int[][] state, int depth) {
-        return checkForWinner(state) || checkForDraw(state) || depth == this.depth;
+        return checkForWinner(state) || checkForDraw(state) || depth == this.maxDepth;
     }
 
     private int[][] result(int[][] gameState, int action) {
+        int[][] grid = new int[gameState.length][gameState[0].length];
+        IntStream.range(0, grid.length).forEachOrdered(i -> System.arraycopy(gameState[i], 0, grid[i], 0, grid[0].length));
+        for (int row = 0; row < grid[0].length; row++) {
+            if (grid[action][row] == -1) {
+                grid[action][row] = determinePlayer(gameState);
+            }
+        }
+        return grid;
+    }
+
+    private int[][] undoResult(int[][] gameState, int action) {
         int[][] grid = gameState.clone();
-        for (int row = 1; row < grid[0].length - 1; row++) {
+        for (int row = 1; row < grid[0].length; row++) {
             if (grid[action][row] == -1) {
                 grid[action][row] = determinePlayer(gameState);
             }
@@ -150,13 +171,59 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     public int utility(int[][] state) {
-        if (checkForWinner(state))
+        int player = determinePlayer(state);
+        if (player == 1)
             return 1000;
-        else if (checkForWinner(state))
+        else if (player == 2){
             return -1000;
-        else if (checkForDraw(state))
+        }
+        else if (checkForDraw(state)){
             return 0;
-        return 0; //should not happen
+        }
+        else return 0;
+//        else return checkForMidGameUtility(state); // will get here at when max depth < 42
+    }
+
+    private int checkForMidGameUtility(int[][] gameBoard) {
+        int total = 0;
+        for (int col = 0; col < gameBoard.length; col++) {
+            for (int row = 0; row < gameBoard[0].length; row++) {
+                int horizontalTemp = 0;
+                int verticalTemp = 0;
+                int posDiagTemp = 0;
+                int negDiagTemp = 0;
+                for (int i = 0; i <= 2; i++) {
+                    //Horizontal
+                    if (col <= 3) {
+                        if (gameBoard[col + i][row] == model.getTurn()) {
+                            horizontalTemp += 1;
+                        }
+                    }
+                    //Vertical
+                    if (row <= 2) {
+                        if (gameBoard[col][row + i] == model.getTurn()) {
+                            verticalTemp += 1;
+                        }
+                    }
+                    //Pos Diagonal
+                    if (row <= 2 && col >= 3) {
+                        if (gameBoard[col - i][row + i] == model.getTurn()) {
+                            posDiagTemp += 1;
+                        }
+                    }
+                    //Neg Diagonal
+                    if (row <= 2 && col <= 3) {
+                        if (gameBoard[col + i][row + i] == model.getTurn()) {
+                            negDiagTemp += 1;
+                        }
+                    }
+                }
+
+                //the reason for squaring is to make the function value multiple in a row even more appealing to alpha-beta
+                total += sqrt(horizontalTemp) + sqrt(verticalTemp) + sqrt(posDiagTemp) + sqrt(negDiagTemp);
+            }
+        }
+        return total;
     }
 
     public boolean checkForWinner(int[][] grid) {
