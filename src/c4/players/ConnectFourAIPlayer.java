@@ -3,10 +3,10 @@ package c4.players;
 import c4.mvc.ConnectFourModelInterface;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static java.lang.Math.*;
+import static java.util.stream.IntStream.*;
 
 public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
@@ -27,9 +27,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
 
     @Override
     public int getMove() {
-        if (currentPlayerPosition == 0) {
-            currentPlayerPosition = model.getTurn();
-        }
+        currentPlayerPosition = model.getTurn();
         int[][] grid = model.getGrid();
         return alphaBetaSearch(grid);
     }
@@ -50,7 +48,7 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     public int maxValue(int[][] state, int alpha, int beta, int currentDepth) {
-        if (terminalTest(state, currentDepth)) return utility(state);
+        if (terminalTest(state, currentDepth)){ return utility(state);}
         int[] actions = actions(state);
         int eval = Integer.MIN_VALUE;
         for (int i = 0; i < actions.length; i++) {
@@ -58,20 +56,22 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
             eval = max(eval, minValue(result(state, action), alpha, beta, currentDepth + 1));
             if (eval >= beta) return eval;
             alpha = max(alpha, eval);
-            }
+        }
         return eval;
     }
 
     private int minValue(int[][] state, int alpha, int beta, int currentDepth) {
-        if (terminalTest(state, currentDepth)) return utility(state);
+        if (terminalTest(state, currentDepth)){
+            return utility(state);
+        }
         int[] actions = actions(state);
         int eval = Integer.MAX_VALUE;
-        for (int i = 0; i < actions.length; i++) {
+        for (int i = 0; i < actions.length; i++)  {
             int action = actions[i];
             eval = min(eval, maxValue(result(state, action), alpha, beta, currentDepth + 1));
             if (eval >= beta) return eval;
             beta = min(beta, eval);
-            }
+        }
         return eval;
     }
 
@@ -116,10 +116,11 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
                 }
             }
         }
+        System.out.println("Dumb!");
         return 0;
     }
 
-    private int[] actions(int[][] board) {
+    public int[] actions(int[][] board) {
         ArrayList<Integer> actions = new ArrayList<>();
         for (int i = 0; i < board.length; i++) if (board[i][0] == EMPTY) actions.add(i);
         int[] possibleActions = new int[actions.size()];
@@ -130,15 +131,19 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     private boolean terminalTest(int[][] state, int depth) {
-        return checkForWinner(state) || checkForDraw(state) || depth == this.maxDepth;
+        return checkForWinner(state);
     }
 
     private int[][] result(int[][] gameState, int action) {
         int[][] grid = new int[gameState.length][gameState[0].length];
-        IntStream.range(0, grid.length).forEachOrdered(i -> System.arraycopy(gameState[i], 0, grid[i], 0, grid[0].length));
+
+        for (int i = 0; i < grid.length; i++) {
+            System.arraycopy(gameState[i], 0, grid[i], 0, grid[0].length);
+        }
         for (int row = 0; row < grid[0].length; row++) {
             if (grid[action][row] == -1) {
                 grid[action][row] = determinePlayer(gameState);
+                break;
             }
         }
         return grid;
@@ -171,16 +176,17 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     public int utility(int[][] state) {
+//        int player = determinePlayer(state) == 1 ? 2 : 1;
         int player = determinePlayer(state);
-        if (player == 1)
+        System.out.println(player);
+        if (player == currentPlayerPosition) {
             return 1000;
-        else if (player == 2){
+        }
+        else if (player != currentPlayerPosition) {
             return -1000;
-        }
-        else if (checkForDraw(state)){
+        } else if (checkForDraw(state)) {
             return 0;
-        }
-        else return 0;
+        } else return 0;
 //        else return checkForMidGameUtility(state); // will get here at when max depth < 42
     }
 
@@ -227,67 +233,67 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
     }
 
     public boolean checkForWinner(int[][] grid) {
-        int winResult = checkHorizontalWin(grid);
-        if (winResult < 0)
+        boolean winResult = checkHorizontalWin(grid);
+        if (!winResult)
             winResult = checkVerticalWin(grid);
-        if (winResult < 0)
+        if (!winResult)
             winResult = checkNegDiagonalWin(grid);
-        if (winResult < 0)
+        if (!winResult)
             winResult = checkPosDiagonalWin(grid);
         // Must not have one
-        return winResult > 0;
+        return winResult;
     }
 
-    private int checkPosDiagonalWin(int[][] grid) {
+    private boolean checkPosDiagonalWin(int[][] grid) {
         boolean win = false;
         for (int col = 3; col < 7; col++) {
             for (int row = 0; row <= 2; row++) {
                 if (grid[col][row] != EMPTY) {
                     win = (grid[col][row] == grid[col - 1][row + 1]) && (grid[col][row] == grid[col - 2][row + 2]) && (grid[col][row] == grid[col - 3][row + 3]);
                 }
-                if (win) return grid[col][row];
+                if (win) return true;
             }
         }
-        return -1;
+        return false;
     }
 
-    private int checkNegDiagonalWin(int[][] grid) {
+    private boolean checkNegDiagonalWin(int[][] grid) {
         boolean win = false;
         for (int col = 0; col <= 3; col++) {
             for (int row = 0; row <= 2; row++) {
                 if (grid[col][row] != EMPTY) {
                     win = (grid[col][row] == grid[col + 1][row + 1]) && (grid[col][row] == grid[col + 2][row + 2]) && (grid[col][row] == grid[col + 3][row + 3]);
                 }
-                if (win) return grid[col][row];
+                if (win) return true;
             }
         }
-        return -1;
+        return false;
     }
 
-    private int checkVerticalWin(int[][] grid) {
+    private boolean checkVerticalWin(int[][] grid) {
         boolean win = false;
         for (int col = 0; col < 7; col++) {
             for (int row = 0; row <= 2; row++) {
                 if (grid[col][row] != EMPTY) {
                     win = (grid[col][row] == grid[col][row + 1]) && (grid[col][row] == grid[col][row + 2]) && (grid[col][row] == grid[col][row + 3]);
                 }
-                if (win) return grid[col][row];
+                if (win) return true;
             }
         }
-        return -1;
+        return false;
     }
 
-    private int checkHorizontalWin(int[][] grid) {
+    private boolean checkHorizontalWin(int[][] grid) {
         boolean win = false;
         for (int row = 0; row < 6; row++) {
             for (int col = 0; col <= 3; col++) {
                 if (grid[col][row] != EMPTY) {
                     win = (grid[col][row] == grid[col + 1][row]) && (grid[col][row] == grid[col + 2][row]) && (grid[col][row] == grid[col + 3][row]);
                 }
-                if (win) return grid[col][row];
+                if (win) return true;
             }
         }
-        return -1;
+        return false;
     }
 
     public boolean checkForDraw(int[][] grid) {
